@@ -1,0 +1,14 @@
+ - play with number of hubs vs. wire length
+ - obstacles
+ - different methods
+ - Sun method
+ - Explore steiher trees
+ - Real numers (on map), can overlay with python??
+ - Using trans atlantic cabling?
+ - make model 3d?
+ - nice performance graphs
+
+
+Brute force vs.
+graphs
+
