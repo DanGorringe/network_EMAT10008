@@ -357,7 +357,7 @@ print("Length of Quasi-Steiner's network = " + str(NetworkLength(ghostDic)))
 primFileName = "prim.png"
 ghostFileName = "quasiSteiner.png"
 
-print("Saving images to " + str(primFileName) + " and " + str(ghostFileName) "...")
+print("Saving images to " + str(primFileName) + " and " + str(ghostFileName) + "...")
 
 SaveNetworkImage(primDic,primFileName)
 SaveNetworkImage(ghostDic,ghostFileName)
