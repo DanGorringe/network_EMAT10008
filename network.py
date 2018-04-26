@@ -17,11 +17,11 @@ white = (255,255,255)
 black = (0,0,0)
 
 # constants for drawing
-maxXCoord = 1280 # usually 1000
-maxYCoord = 560
-centreRadius = 15
-nodeRadius = 10
-ghostNodeRadius = 5
+maxXCoord = 1000 #1280 # usually 1000
+maxYCoord = 1000 #560
+centreRadius = 40
+nodeRadius = 20
+ghostNodeRadius = 15
 lineWidth = 5
 
 # obstacles constants
@@ -29,15 +29,15 @@ obstacleSize = 20
 
 # Values for centre node
 centreNodeCoords = (int(maxXCoord/2),int(maxYCoord/2))
-centreNodeCoords = (1426,522)
 
 # Reading the csv file and filling a list with coordinates
 
 nodeList = [centreNodeCoords]
-with open('iow.csv','r') as csvfile1:
+
+with open('./csvFiles/list.csv','r') as csvfile1:
     csv = csv.reader(csvfile1,delimiter=',')
     for line in csv:
-        nodeList.append((int(line[0]),int(line[1])))
+        nodeList.append((int(line[0])+10,int(line[1])+25))
 
 
 import csv
@@ -50,6 +50,8 @@ with open('obstacles.csv','r') as csvfile2:
 '''
 
 # Distance dic
+# Don't think the global shit is required
+global distanceDic
 distanceDic = {(centreNodeCoords,centreNodeCoords):0}
 
 #############
@@ -90,10 +92,19 @@ def RandomNodeDic(maxNodes):
     while(len(randomList) < maxNodes):
         # random co-ordinate in square that's 2 node radii smaller than canvas
         randomCoord = (random.randint(2*nodeRadius,maxXCoord-2*nodeRadius),random.randint(2*nodeRadius,maxYCoord-2*nodeRadius))
+        minX = centreNodeCoords[0] - nodeRadius*2
+        maxX = centreNodeCoords[0] + nodeRadius*2
+        minY = centreNodeCoords[1] - nodeRadius*2
+        maxY = centreNodeCoords[1] + nodeRadius*2
 
         # not in centre box (centre + 2 node and centre radii)
-        if(maxXCoord/2-2*nodeRadius-centreRadius<randomCoord[0]<maxXCoord/2+2*nodeRadius+centreRadius and maxYCoord/2-2*nodeRadius-centreRadius<randomCoord[1]<maxYCoord/2+2*nodeRadius+centreRadius):
+        #if(maxXCoord/2-2*nodeRadius-centreRadius>randomCoord[0]>maxXCoord/2+2*nodeRadius+centreRadius and maxYCoord/2-2*nodeRadius-centreRadius<randomCoord[1]<maxYCoord/2+2*nodeRadius+centreRadius):
+
+        #    randomList.append(randomCoord)
+        if not (minX<randomCoord[0]<maxX) and not (minY<randomCoord[1]<maxY):
             randomList.append(randomCoord)
+
+    print(randomList)
     return randomList
 
 
@@ -173,16 +184,17 @@ def ObjectAvoidance(a,b,obstacle,dic):
 
 # A function that returns the distance between two co-ordinates, in format [x,y]
 def CalculateCoOrdDistance(a,b):
+    global distanceDic
     # Now check whether already calculated distance
     if (a,b) in distanceDic:
         return distanceDic[(a,b)]
     else:
         deltaX = a[0] - b[0]
         deltaY = a[1] - b[1]
-        distance = deltaX**2 + deltaY**2
-        distanceDic[(a,b)] = math.sqrt(distance)
-        distanceDic[(b,a)] = math.sqrt(distance)
-        return math.sqrt(distance)
+        distance = math.sqrt(deltaX**2 + deltaY**2)
+        distanceDic[(a,b)] = distance
+        distanceDic[(b,a)] = distance
+        return distance
 
 
 # Used for finding shortest connections for Prim's Algorithm
@@ -221,7 +233,7 @@ def Prims(nodeList):
     #unconnectedNodes.append((600,600))
     i = 0
     while(len(unconnectedNodes) != 0):
-        #i = i + 1
+        i = i + 1
         q = ShortestDistance(connectedNodes,unconnectedNodes)
         Connect(q[0][0],q[0][1],primmDic)
         #SaveNetworkImage(primmDic,"./primsGif/"+format(i,'02d')+".png")
@@ -237,6 +249,7 @@ def Sun(nodeList):
     total = 0
     # Initiate a dictionary
     sunDic = InitiateNodeDic()
+    i = 0
     while(len(unconnectedNodes) != 0):
         Connect(centreNodeCoords,unconnectedNodes[-1],sunDic)
         connectedNodes.append(unconnectedNodes[-1])
@@ -250,13 +263,16 @@ def Ghost(nodeList):
     ghostingDic = InitiateNodeDic()
     # Create a 'value' of wire to 'beat'
     # best is the midpoint ghost node which shortens the network the most
+    print("Checking all midpoints...")
     best = GhostOptimumNode(unconnectedNodes)
     # While there is a ghost node that shortens the network
     while(best != None):
+        # Print something so you know the program isn't crashing
+        print("Checking all midpoints...")
         # Append the list of nodes with the previous best
         unconnectedNodes.append(best)
         best = GhostOptimumNode(unconnectedNodes)
-
+    print("Finished checking all midpoints")
     # Finally run prims with the finished list
     ghostingDic = Prims(unconnectedNodes)
     return ghostingDic
@@ -297,10 +313,9 @@ def NetworkLength(dic):
 def powerset(iterable):
     s = list(iterable)
     r = len(s)
+    # Required so that the program can run in some reasonable time
     if r > 5:
         r = 5
-
-    print(r)
     '''
     if len(s) < 3:
         r = len(s)
@@ -308,10 +323,13 @@ def powerset(iterable):
     return itertools.chain.from_iterable(itertools.combinations(s, r) for r in range(2,r+1))
 
 def SaveNetworkImage(dic,fileString):
+    # Open blank image
     image = Image.new("RGB", (maxXCoord, maxYCoord), white)
-    image = Image.open("iow.png")
+    # Alternativly, Instead open a png to draw over
+    #image = Image.open("iow.png")
     draw = ImageDraw.Draw(image)
     DrawNetwork(dic,draw)
+    # Save as the given fileString
     image.save(fileString)
 
 
@@ -321,13 +339,32 @@ def SaveNetworkImage(dic,fileString):
 
 # to iniate dictionary
 dic = InitiateNodeDic()
-ghostDic = Prims(dic)
-SaveNetworkImage(ghostDic,"test2.png")
 
+# Run prims on dic
+print("Running Prims...")
+primDic = Prims(dic)
 
+# Run our Quasi-Steiner algorithm on dic, can take quite a while
+print("Running Quasi-Steiner...")
+ghostDic = Ghost(dic)
 
+print("Finished running algorithms.")
 
+# Print lengths of networks
+print("Length of Prim's network = " + str(NetworkLength(primDic)))
+print("Length of Quasi-Steiner's network = " + str(NetworkLength(ghostDic)))
 
+primFileName = "prim.png"
+ghostFileName = "quasiSteiner.png"
+
+print("Saving images to " + str(primFileName) + " and " + str(ghostFileName) "...")
+
+SaveNetworkImage(primDic,primFileName)
+SaveNetworkImage(ghostDic,ghostFileName)
+
+print("Finished saving.")
+
+print("Finished program.")
 
 
 # Dan Gorringe April 2018
